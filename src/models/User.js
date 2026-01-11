@@ -6,6 +6,11 @@ const userSchema = new mongoose.Schema({
   phone: { type: String, required: true},
   password: { type: String, required: true },
   addresses: [{ type: String }],
+  role: {
+  type: String,
+  enum: ['user', 'admin'],
+  default: 'user',
+}
 
 });
 

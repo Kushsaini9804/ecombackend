@@ -49,48 +49,6 @@ const buyNow = async (req, res) => {
   }
 };
 
-// get my order
-
-// const getMyOrders = async (req, res) => {
-//   try {
-//     const userId = req.user._id;
-
-//     const orders = await Order.find({ userId })
-//       .populate('items.productId', 'title price image')
-//       .sort({ createdAt: -1 });
-
-//     // FIXED: ensure numbers instead of strings
-//     const formattedOrders = orders.map(order => ({
-//       orderId: order._id.toString(),
-//       total: Number(order.total) || 0,  
-//       items: order.items.map(i => ({
-//         productId: i.productId?._id,
-//         title: i.productId?.title,
-//         price: Number(i.productId?.price ?? 0),  
-//         qty: Number(i.qty ?? 1),                 
-//         // image: i.productId?.image,
-//         image: i.productId?.image
-//           ? `${process.env.BASE_URL}${i.productId.image}`
-//           : null,
-
-//       })),
-//       status: order.status || 'Approved',
-//       payment_type: order.payment_type || 'COD',
-//       address: order.address,
-//       createdAt: order.createdAt,
-//     }));
-
-
-//     res.json({
-//       success: true,
-//       orders: formattedOrders,
-//     });
-//   } catch (error) {
-//     console.error('Get orders error:', error);
-//     res.status(500).json({ message: 'Failed to fetch orders' });
-//   }
-// };
-
 const getMyOrders = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -99,24 +57,6 @@ const getMyOrders = async (req, res) => {
       .populate('items.productId', 'title price image')
       .sort({ createdAt: -1 });
 
-    // const formattedOrders = orders.map(order => ({
-    //   orderId: order._id.toString(),
-    //   total: Number(order.total),
-    //   status: order.status,
-    //   payment_type: order.payment_type,
-    //   createdAt: order.createdAt,
-
-    //   items: order.items.map(i => ({
-    //     title: i.productId?.title,
-    //     qty: Number(i.qty),
-    //     price: Number(i.productId?.price),
-
-    //     /// ✅ FULL IMAGE URL
-    //     image: i.productId?.image
-    //       ? `${process.env.BASE_URL}${i.productId.image}`
-    //       : null,
-    //   })),
-    // }));
 
     const formattedOrders = orders.map(order => ({
       orderId: order._id.toString(),
@@ -204,6 +144,117 @@ const placeOrder = async (req, res) => {
   }
 };
 
-module.exports = { placeOrder, getMyOrders, buyNow };
+const updateOrderStatus = async (req, res) => {
+  try {
+    const { orderId, status } = req.body;
+
+    const allowed = ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'];
+    if (!allowed.includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const order = await Order.findByIdAndUpdate(
+      orderId,
+      { status },
+      { new: true }
+    );
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Order status updated',
+      status: order.status,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update status' });
+  }
+};
+
+const getAllOrders = async (req, res) => {
+  try {
+    const orders = await Order.find()
+      .populate('userId', 'name email')
+      .populate('items.productId', 'title image')
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, orders });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch orders' });
+  }
+};
+
+// const cancelOrder = async (req, res) => {
+//   const { orderId, reason } = req.body;
+
+//   const order = await Order.findById(orderId);
+//   if (!order) return res.status(404).json({ message: 'Order not found' });
+
+//   if (order.status !== 'Pending') {
+//     return res.status(400).json({ message: 'Cannot cancel now' });
+//   }
+
+//   order.status = 'Cancelled';
+//   order.cancelReason = reason;
+//   await order.save();
+
+//   res.json({ success: true, message: 'Order cancelled' });
+// };
 
 
+const cancelOrder = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { orderId } = req.params;
+
+    const order = await Order.findOne({ _id: orderId, userId });
+
+    if (!order)
+      return res.status(404).json({ message: 'Order not found' });
+
+    if (['Shipped', 'Delivered'].includes(order.status)) {
+      return res.status(400).json({ message: 'Order cannot be cancelled' });
+    }
+
+    order.status = 'Cancelled';
+    await order.save();
+
+    res.json({ success: true, message: 'Order cancelled successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Cancel failed' });
+  }
+};
+
+
+const requestReturn = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { orderId } = req.params;
+    const { reason } = req.body;
+
+    const order = await Order.findOne({ _id: orderId, userId });
+
+    if (!order)
+      return res.status(404).json({ message: 'Order not found' });
+
+    if (order.status !== 'Delivered') {
+      return res.status(400).json({ message: 'Return allowed only after delivery' });
+    }
+
+    order.status = 'Return Requested';
+    order.returnReason = reason;
+    order.returnRequestedAt = new Date();
+
+    await order.save();
+
+    res.json({ success: true, message: 'Return requested' });
+  } catch (err) {
+    res.status(500).json({ message: 'Return failed' });
+  }
+};
+
+
+
+module.exports = { placeOrder, getMyOrders, buyNow, updateOrderStatus, getAllOrders, cancelOrder, requestReturn };
