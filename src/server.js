@@ -16,6 +16,8 @@ app.use('/api/cart', require('./routes/cart'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api', require('./routes/address'));
+app.use('/api/admin', require('./routes/admin'));
+
 ///users/update-profile
 //images
 app.use("/images", express.static(path.join(__dirname, "assests/images")));
