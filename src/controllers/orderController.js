@@ -293,13 +293,21 @@ const buyNow = async (req, res) => {
       return res.status(400).json({ message: 'Product ID required' });
     }
 
-    if (
-      !address?.name ||
+    // if (
+    //   !address?.name ||
+    //   !address?.phone ||
+    //   !address?.street ||
+    //   !address?.city ||
+    //   !address?.state ||
+    //   !address?.zip
+    // )
+       if (
+      !address?.fullName ||
       !address?.phone ||
-      !address?.street ||
+      !address?.pincode ||
       !address?.city ||
       !address?.state ||
-      !address?.zip
+      !address?.addressLine
     ) {
       return res.status(400).json({ message: 'Complete address is required' });
     }
