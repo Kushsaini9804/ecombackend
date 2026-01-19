@@ -433,7 +433,18 @@ const placeOrder = async (req, res) => {
 const updateOrderStatus = async (req, res) => {
   try {
     const { orderId, status } = req.body;
-    const allowed = ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'];
+
+    if (!orderId || !status) {
+      return res.status(400).json({ message: 'orderId and status required' });
+    }
+
+    const allowed = [
+      'Pending',
+      'Confirmed',
+      'Shipped',
+      'Delivered',
+      'Cancelled'
+    ];
 
     if (!allowed.includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
@@ -449,9 +460,14 @@ const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    res.json({ success: true, status: order.status });
+    res.json({
+      success: true,
+      message: 'Order status updated',
+      status: order.status,
+    });
 
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Failed to update status' });
   }
 };

@@ -20,7 +20,13 @@ const products = [
     title: "Mi Smart Band 5",
     price: 1999,
     image: "https://m.media-amazon.com/images/I/51sRG9RoizL._AC_UY436_FMwebp_QL65_.jpg",
+    highlights : [
+      "AMOLED color display",
+      "Music and Camera control",
+      "Upto 14 days battery life"
+    ],
     description: "Fitness tracker with heart rate monitor.",
+
   },
   {
     title: "Boat Airdopes 141",
