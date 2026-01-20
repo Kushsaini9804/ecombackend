@@ -22,7 +22,7 @@ const paymentRoutes = require("./routes/payment");
 app.use("/payment", paymentRoutes);
 app.use('/api/admin/orders', require('./routes/adminOrders'));
 
-
+app.use('/api/wishlist', require('./routes/wishlist'));  
 ///users/update-profile
 //images
 app.use("/images", express.static(path.join(__dirname, "assests/images")));

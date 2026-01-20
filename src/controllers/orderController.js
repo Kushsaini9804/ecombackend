@@ -280,34 +280,31 @@ const Product = require('../models/Product');
 /* =========================
    BUY NOW
 ========================= */
+
+
+/* =========================
+   BUY NOW (WORKING)
+========================= */
 const buyNow = async (req, res) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+    console.log('BUY NOW BODY 👉', req.body);
 
     const userId = req.user._id;
-    const { productId, qty = 1, payment_type = 'COD', address } = req.body;
+    const { productId, address, paymentMethod = 'cod' } = req.body;
 
+    // ✅ VALIDATIONS
     if (!productId) {
       return res.status(400).json({ message: 'Product ID required' });
     }
 
-    // if (
-    //   !address?.name ||
-    //   !address?.phone ||
-    //   !address?.street ||
-    //   !address?.city ||
-    //   !address?.state ||
-    //   !address?.zip
-    // )
-       if (
-      !address?.fullName ||
-      !address?.phone ||
-      !address?.pincode ||
-      !address?.city ||
-      !address?.state ||
-      !address?.addressLine
+    if (
+      !address ||
+      !address.fullName ||
+      !address.phone ||
+      !address.pincode ||
+      !address.city ||
+      !address.state ||
+      !address.addressLine
     ) {
       return res.status(400).json({ message: 'Complete address is required' });
     }
@@ -317,57 +314,101 @@ const buyNow = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    const safeQty = Math.max(Number(qty), 1);
-
+    // ✅ CREATE ORDER
     const order = await Order.create({
       userId,
-      items: [{
-        productId: product._id,
-        title: product.title,
-        image: product.image,
-        qty: safeQty,
-        price: product.price,
-      }],
-      total: product.price * safeQty,
+      items: [
+        {
+          productId: product._id,
+          title: product.title,
+          image: product.image,
+          qty: 1,
+          price: product.price,
+        },
+      ],
+      total: product.price,
       address,
-      payment_type,
-      status: payment_type === 'Online' ? 'Confirmed' : 'Pending',
+      payment_type: paymentMethod,
+      status: paymentMethod === 'online' ? 'Confirmed' : 'Pending',
     });
 
     res.status(201).json({
       success: true,
-      message: 'Order placed successfully',
+      message: 'Buy now order placed',
       orderId: order._id,
     });
-
   } catch (error) {
     console.error('BUY NOW ERROR ❌', error);
-    res.status(500).json({ message: 'Buy now failed', error: error.message });
+    res.status(500).json({ message: 'Buy now failed' });
   }
 };
+
+module.exports = { buyNow };
+
 
 /* =========================
    GET MY ORDERS
 ========================= */
+// const getMyOrders = async (req, res) => {
+//   try {
+//     if (!req.user) {
+//       return res.status(401).json({ message: 'Unauthorized' });
+//     }
+
+//     const userId = req.user._id;
+
+//     const orders = await Order.find({ userId })
+//       .populate('items.productId', 'title price image')
+//       .sort({ createdAt: -1 });
+
+//     res.json({ success: true, orders });
+
+//   } catch (error) {
+//     console.error('GET ORDERS ERROR ❌', error);
+//     res.status(500).json({ message: 'Failed to fetch orders' });
+//   }
+// };
+
 const getMyOrders = async (req, res) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-
     const userId = req.user._id;
 
     const orders = await Order.find({ userId })
       .populate('items.productId', 'title price image')
       .sort({ createdAt: -1 });
 
-    res.json({ success: true, orders });
+    const formattedOrders = orders.map(order => ({
+      orderId: order._id.toString(),
+      total: Number(order.total),
+      status: order.status,
+      payment_type: order.payment_type,
+      createdAt: order.createdAt,
+      address: {
+        name: order.address.fullName,
+        phone: order.address.phone,
+        street: order.address.addressLine,
+        city: order.address.city,
+        state: order.address.state,
+        zip: order.address.pincode,
+      },
+      items: order.items.map(item => ({
+        title: item.title,
+        qty: item.qty,
+        price: item.price,
+        image: item.image,
+      })),
+    }));
 
+    res.json({
+      success: true,
+      orders: formattedOrders,
+    });
   } catch (error) {
-    console.error('GET ORDERS ERROR ❌', error);
+    console.error('GET ORDERS ERROR', error);
     res.status(500).json({ message: 'Failed to fetch orders' });
   }
 };
+
 
 /* =========================
    PLACE ORDER FROM CART

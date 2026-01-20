@@ -28,7 +28,6 @@ const orderSchema = new mongoose.Schema(
       min: 0,
     },
 
-    // ✅ MATCHES FLUTTER CHECKOUT
     address: {
       fullName: { type: String, required: true },
       phone: { type: String, required: true },
