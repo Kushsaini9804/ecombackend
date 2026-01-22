@@ -10,7 +10,10 @@ const router = express.Router();
 
 router.use(protect, adminOnly);
 
+// 🔹 GET ALL ORDERS
 router.get('/all-orders', getAllOrdersAdmin);
-router.put('/update-status', updateOrderStatus);
+
+// 🔹 UPDATE ORDER STATUS
+router.put('/:id/status', updateOrderStatus);
 
 module.exports = router;
